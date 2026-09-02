@@ -9,17 +9,17 @@ HTTP books (`pinnacle`, `bwin`) need only `httpx`. Playwright books (`bet365`, `
 No PyPI. Pin a tag from this repo in the backend:
 
 ```text
-bookie-scraper @ git+https://github.com/Geordie1071-spec/BookieScraper.git@v0.1.0
+bookie-scraper @ git+https://github.com/Geordie1071-spec/BookieScraper.git@v0.1.1
 ```
 
 If the repo is private, use a token in the URL (`git+https://${GITHUB_TOKEN}@github.com/...`).
 
 ```bash
 # HTTP books only (Railway / backend)
-pip install "bookie-scraper @ git+https://github.com/Geordie1071-spec/BookieScraper.git@v0.1.0"
+pip install "bookie-scraper @ git+https://github.com/Geordie1071-spec/BookieScraper.git@v0.1.1"
 
 # Local CLI including Playwright brands
-pip install "bookie-scraper[playwright] @ git+https://github.com/Geordie1071-spec/BookieScraper.git@v0.1.0"
+pip install "bookie-scraper[playwright] @ git+https://github.com/Geordie1071-spec/BookieScraper.git@v0.1.1"
 python -m playwright install chromium
 ```
 
@@ -57,6 +57,8 @@ Respond with:
 - `Content-Disposition: attachment; filename="{bookie}_{sport}.csv"`
 
 CSV columns: `bookmaker`, `sport`, `sport_key`, `competition`, `event`, `event_id`, `home`, `away`, `starts_at`, `status`, `market`, `market_key`, `outcome`, `odds`, `point`, `active`, `scraped_at`.
+
+Every data cell is prefixed with `'` so Excel keeps values like `2-1` as text instead of a date. Headers are unchanged.
 
 ## CLI scrape
 
