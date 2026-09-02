@@ -23,6 +23,7 @@ def test_public_exports() -> None:
     assert callable(results_to_csv)
     assert "pinnacle" in REGISTRY
     assert "bwin" in REGISTRY
+    assert HTTP_BOOKMAKERS == frozenset({"pinnacle", "bwin"})
 
 
 def test_registry_lists_keys_without_loading_playwright() -> None:
@@ -65,6 +66,7 @@ def test_results_to_csv_header_and_row() -> None:
                 outcomes=[
                     Outcome(name="A", price=1.9),
                     Outcome(name="B", price=2.1),
+                    Outcome(name="2-1", price=3.4),
                     Outcome(name="skip", price=None),
                 ],
             )
@@ -75,9 +77,13 @@ def test_results_to_csv_header_and_row() -> None:
     lines = csv_text.strip().splitlines()
     header = lines[0].split(",")
     assert header == CSV_FIELDS
-    assert len(lines) == 3
-    assert "pinnacle,Football,soccer,EPL,A vs B,1,A,B" in lines[1]
-    assert "1.9" in lines[1]
+    assert len(lines) == 4
+    cells = lines[1].split(",")
+    assert all(cell.startswith("'") for cell in cells)
+    assert "'pinnacle,'Football,'soccer,'EPL,'A vs B,'1,'A,'B" in lines[1]
+    assert "'1.9" in lines[1]
+    assert cells[CSV_FIELDS.index("point")] == "'"
+    assert "'2-1" in lines[3]
     assert "skip" not in csv_text
 
 

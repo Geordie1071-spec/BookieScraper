@@ -27,6 +27,13 @@ def results_to_rows(results: list[ScrapeResult]) -> list[dict[str, Any]]:
     return rows
 
 
+def _excel_text(value: Any) -> str:
+    """Prefix so Excel keeps values like 2-1 as text instead of a date."""
+    if value is None:
+        return "'"
+    return f"'{value}"
+
+
 def rows_to_csv(rows: list[dict[str, Any]]) -> str:
     buf = io.StringIO()
     writer = csv.DictWriter(
@@ -36,7 +43,9 @@ def rows_to_csv(rows: list[dict[str, Any]]) -> str:
         lineterminator="\n",
     )
     writer.writeheader()
-    writer.writerows(rows)
+    writer.writerows(
+        {key: _excel_text(row.get(key)) for key in CSV_FIELDS} for row in rows
+    )
     return buf.getvalue()
 
 
