@@ -18,7 +18,7 @@ class ScrapeConfig:
     sports: list[str] = field(default_factory=list)  # empty = all
     depth: str = "full"  # main | full
     headed: bool = False
-    output_dir: str = "data"
+    output_dir: str | None = "data"  # None = do not write files (in-process CSV)
     concurrency: int = 4
     request_delay: float = 0.15
     debug: bool = False

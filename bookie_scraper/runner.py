@@ -11,7 +11,7 @@ from bookie_scraper.storage import save_run
 async def run(cfg: ScrapeConfig) -> list[ScrapeResult]:
     unknown = [b for b in cfg.bookmakers if b not in REGISTRY]
     if unknown:
-        raise SystemExit(f"Unknown bookmaker(s): {unknown}. Valid: {list(REGISTRY)}")
+        raise ValueError(f"Unknown bookmaker(s): {unknown}. Valid: {list(REGISTRY)}")
 
     print(f"Scraping: {cfg.bookmakers}  depth={cfg.depth}")
     if cfg.sports:
@@ -28,6 +28,7 @@ async def run(cfg: ScrapeConfig) -> list[ScrapeResult]:
             return res
 
     results = await asyncio.gather(*(one(b) for b in cfg.bookmakers))
-    save_run(cfg.output_dir, list(results))
+    if cfg.output_dir is not None:
+        save_run(cfg.output_dir, list(results))
     print("\nAll done.")
     return list(results)

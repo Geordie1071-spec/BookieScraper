@@ -67,6 +67,9 @@ def main(argv: list[str] | None = None) -> None:
     )
     try:
         asyncio.run(run(cfg))
+    except ValueError as exc:
+        print(exc, file=sys.stderr)
+        sys.exit(2)
     except KeyboardInterrupt:
         print("\nInterrupted.")
         sys.exit(130)
