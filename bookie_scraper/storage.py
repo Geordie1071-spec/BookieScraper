@@ -1,15 +1,48 @@
 from __future__ import annotations
 
 import csv
+import io
 import json
 from pathlib import Path
 from typing import Any
 
 from bookie_scraper.models import ScrapeResult, utc_now
 
+CSV_FIELDS = [
+    "bookmaker", "sport", "sport_key", "competition", "event", "event_id",
+    "home", "away", "starts_at", "status", "market", "market_key",
+    "outcome", "odds", "point", "active", "scraped_at",
+]
+
 
 def _write_json(path: Path, data: Any) -> None:
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
+
+
+def results_to_rows(results: list[ScrapeResult]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for result in results:
+        for event in result.events:
+            rows.extend(event.to_rows())
+    return rows
+
+
+def rows_to_csv(rows: list[dict[str, Any]]) -> str:
+    buf = io.StringIO()
+    writer = csv.DictWriter(
+        buf,
+        fieldnames=CSV_FIELDS,
+        extrasaction="ignore",
+        lineterminator="\n",
+    )
+    writer.writeheader()
+    writer.writerows(rows)
+    return buf.getvalue()
+
+
+def results_to_csv(results: list[ScrapeResult]) -> str:
+    """Flat CSV (one row per outcome) for a file download. Always includes a header."""
+    return rows_to_csv(results_to_rows(results))
 
 
 def save_run(output_dir: str, results: list[ScrapeResult]) -> Path:
@@ -70,15 +103,4 @@ def save_run(output_dir: str, results: list[ScrapeResult]) -> Path:
 
 
 def _write_csv(path: Path, rows: list[dict]) -> None:
-    if not rows:
-        path.write_text("", encoding="utf-8")
-        return
-    fieldnames = [
-        "bookmaker", "sport", "sport_key", "competition", "event", "event_id",
-        "home", "away", "starts_at", "status", "market", "market_key",
-        "outcome", "odds", "point", "active", "scraped_at",
-    ]
-    with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
-        writer.writeheader()
-        writer.writerows(rows)
+    path.write_text(rows_to_csv(rows), encoding="utf-8")

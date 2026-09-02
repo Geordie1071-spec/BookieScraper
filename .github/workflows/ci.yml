@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install package (no Playwright)
+        run: pip install -e ".[dev]"
+      - name: Smoke-import HTTP books
+        run: |
+          python -c "
+          from bookie_scraper import HTTP_BOOKMAKERS, REGISTRY, results_to_csv, run, ScrapeConfig
+          assert 'pinnacle' in HTTP_BOOKMAKERS
+          assert REGISTRY['pinnacle'].key == 'pinnacle'
+          assert REGISTRY['bwin'].key == 'bwin'
+          import sys
+          assert 'playwright' not in sys.modules
+          print('http books ok')
+          "
+      - name: Tests
+        run: pytest

@@ -1,15 +1,64 @@
 # BookieScraper
 
-Multi-brand sportsbook odds scraper. Each bookmaker is an adapter that writes the same schema, so the output can sit behind (or replace) a paid odds feed.
+Multi-brand sportsbook odds scraper. Each bookmaker is an adapter that writes the same schema. The in-process API returns a **flat CSV** (one row per outcome) so a backend can scrape on click and send a file download.
 
-## Setup
+HTTP books (`pinnacle`, `bwin`) need only `httpx`. Playwright books (`bet365`, `betsson`, `betway`, `ivybet`) need the `[playwright]` extra and Chromium — do not run those inside a web API process.
+
+## Install (GitHub is the registry)
+
+No PyPI. Pin a tag from this repo in the backend:
+
+```text
+bookie-scraper @ git+https://github.com/Geordie1071-spec/BookieScraper.git@v0.1.0
+```
+
+If the repo is private, use a token in the URL (`git+https://${GITHUB_TOKEN}@github.com/...`).
 
 ```bash
-pip install -r requirements.txt
+# HTTP books only (Railway / backend)
+pip install "bookie-scraper @ git+https://github.com/Geordie1071-spec/BookieScraper.git@v0.1.0"
+
+# Local CLI including Playwright brands
+pip install "bookie-scraper[playwright] @ git+https://github.com/Geordie1071-spec/BookieScraper.git@v0.1.0"
 python -m playwright install chromium
 ```
 
-## Scrape
+Or from a clone:
+
+```bash
+pip install -e .
+# optional: pip install -e ".[playwright]" && python -m playwright install chromium
+```
+
+`requirements.txt` is the full local set (`httpx` + `playwright`).
+
+## In-process CSV (backend)
+
+User picks a sport and bookie. The request waits a couple of seconds and returns `text/csv`:
+
+```python
+from bookie_scraper import HTTP_BOOKMAKERS, ScrapeConfig, results_to_csv, run
+
+async def scrape_csv(bookie: str, sport: str) -> str:
+    if bookie not in HTTP_BOOKMAKERS:
+        raise ValueError(f"{bookie} is not an HTTP book; use pinnacle or bwin")
+    results = await run(ScrapeConfig(
+        bookmakers=[bookie],
+        sports=[sport],
+        depth="main",
+        output_dir=None,  # no files on disk
+    ))
+    return results_to_csv(results)
+```
+
+Respond with:
+
+- `Content-Type: text/csv; charset=utf-8`
+- `Content-Disposition: attachment; filename="{bookie}_{sport}.csv"`
+
+CSV columns: `bookmaker`, `sport`, `sport_key`, `competition`, `event`, `event_id`, `home`, `away`, `starts_at`, `status`, `market`, `market_key`, `outcome`, `odds`, `point`, `active`, `scraped_at`.
+
+## CLI scrape
 
 ```bash
 # all bookmakers, all sports, every market on every event (default)
@@ -41,12 +90,12 @@ Each bookie prints per-sport timings in this form, also stored in `summary.json`
 
 Pinnacle sports run in parallel, so those seconds are work time for that sport, not exclusive wall clock. Playwright books (Bet365, Betsson, IvyBet) should be run one brand at a time for stable timings.
 
-Outputs land in `data/runs/<timestamp>/` and are copied to `data/latest/`:
+CLI outputs land in `data/runs/<timestamp>/` and are copied to `data/latest/`:
 
 | file | what |
 |---|---|
 | `*_events.json` | Odds-API-like nested events (swap-in backup) |
-| `*_flat.csv` | one row per outcome |
+| `*_flat.csv` | one row per outcome (same as `results_to_csv()`) |
 | `all_events.json` / `all_flat.csv` | combined |
 | `summary.json` | event / odds counts and `sport_timings` per brand |
 
@@ -61,4 +110,4 @@ Outputs land in `data/runs/<timestamp>/` and are copied to `data/latest/`:
 | `ivybet` | Playwright + Digitain Socket.IO event odds (`sb.ivybet.com`). Baseball visits every event (player props included). Other sports cap event-page visits. F1 is parsed from the featured outright listing. | all sports on the sportsbook |
 | `bwin` | Entain CDS `fixtures` + `fixture-view?offerMapping=All`. Baseball fixture-view includes player hits/runs/HRs/Ks. | all sports with CDS fixtures |
 
-Add a new brand by dropping a class in `bookie_scraper/bookmakers/` and registering it in `bookmakers/__init__.py`.
+Add a new brand by dropping a class in `bookie_scraper/bookmakers/` and registering it in `bookmakers/__init__.py` (`_ADAPTERS`).
