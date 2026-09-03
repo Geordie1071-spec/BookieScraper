@@ -14,10 +14,11 @@ _ADAPTERS: dict[str, tuple[str, str]] = {
     "betsson": ("bookie_scraper.bookmakers.betsson", "Betsson"),
     "betway": ("bookie_scraper.bookmakers.betway", "Betway"),
     "ivybet": ("bookie_scraper.bookmakers.ivybet", "IvyBet"),
+    "unibet": ("bookie_scraper.bookmakers.unibet", "Unibet"),
     "bwin": ("bookie_scraper.bookmakers.bwin", "Bwin"),
 }
 
-HTTP_BOOKMAKERS = frozenset({"pinnacle", "bwin"})
+HTTP_BOOKMAKERS = frozenset({"pinnacle", "bwin", "unibet"})
 PLAYWRIGHT_BOOKMAKERS = frozenset(_ADAPTERS) - HTTP_BOOKMAKERS
 
 

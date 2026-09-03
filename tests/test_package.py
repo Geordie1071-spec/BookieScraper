@@ -23,7 +23,8 @@ def test_public_exports() -> None:
     assert callable(results_to_csv)
     assert "pinnacle" in REGISTRY
     assert "bwin" in REGISTRY
-    assert HTTP_BOOKMAKERS == frozenset({"pinnacle", "bwin"})
+    assert "unibet" in REGISTRY
+    assert HTTP_BOOKMAKERS == frozenset({"pinnacle", "bwin", "unibet"})
 
 
 def test_registry_lists_keys_without_loading_playwright() -> None:
@@ -39,12 +40,15 @@ def test_registry_lists_keys_without_loading_playwright() -> None:
 def test_http_adapters_load_without_playwright() -> None:
     pinnacle = REGISTRY["pinnacle"]
     bwin = REGISTRY["bwin"]
+    unibet = REGISTRY["unibet"]
     assert pinnacle.key == "pinnacle"
     assert bwin.key == "bwin"
+    assert unibet.key == "unibet"
     assert "playwright" not in sys.modules
     assert "bookie_scraper.bookmakers.bet365" not in sys.modules
     assert "bookie_scraper.bookmakers.pinnacle" in sys.modules
     assert "bookie_scraper.bookmakers.bwin" in sys.modules
+    assert "bookie_scraper.bookmakers.unibet" in sys.modules
 
 
 def test_results_to_csv_header_and_row() -> None:
@@ -131,3 +135,51 @@ def test_run_skips_disk_when_output_dir_is_none(tmp_path: Path, monkeypatch: pyt
 
     asyncio.run(write_disk())
     assert saved
+
+
+def test_unibet_kambi_odds_and_event() -> None:
+    from bookie_scraper.bookmakers.unibet import event_from_kambi, kambi_odds
+
+    assert kambi_odds(1930) == 1.93
+    assert kambi_odds(1.91) == 1.91
+    event = event_from_kambi(
+        {
+            "id": 9,
+            "englishName": "Home - Away",
+            "homeName": "Home",
+            "awayName": "Away",
+            "start": "2026-01-01T12:00:00Z",
+            "state": "NOT_STARTED",
+            "group": "EPL",
+            "path": [
+                {"englishName": "Football"},
+                {"englishName": "EPL"},
+            ],
+        },
+        [
+            {
+                "criterion": {"englishLabel": "Full Time"},
+                "betOfferType": {"englishName": "Match"},
+                "outcomes": [
+                    {"type": "OT_ONE", "odds": 1930, "status": "OPEN"},
+                    {"type": "OT_CROSS", "odds": 3500, "status": "OPEN"},
+                    {"type": "OT_TWO", "odds": 4000, "status": "OPEN"},
+                    {
+                        "label": "Over",
+                        "odds": 1900,
+                        "line": 2500,
+                        "status": "OPEN",
+                        "englishLabel": "Over",
+                    },
+                ],
+            }
+        ],
+    )
+    assert event is not None
+    assert event.bookmaker == "unibet"
+    assert event.home == "Home"
+    names = {o.name: o for m in event.markets for o in m.outcomes}
+    assert names["Home"].price == 1.93
+    assert names["Draw"].price == 3.5
+    assert names["Over"].point == 2.5
+

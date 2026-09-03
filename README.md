@@ -2,24 +2,26 @@
 
 Multi-brand sportsbook odds scraper. Each bookmaker is an adapter that writes the same schema. The in-process API returns a **flat CSV** (one row per outcome) so a backend can scrape on click and send a file download.
 
-HTTP books (`pinnacle`, `bwin`) need only `httpx`. Playwright books (`bet365`, `betsson`, `betway`, `ivybet`) need the `[playwright]` extra and Chromium — do not run those inside a web API process.
+HTTP books (`pinnacle`, `bwin`, `unibet`) need only `httpx`. Playwright books (`bet365`, `betsson`, `betway`, `ivybet`) need the `[playwright]` extra and Chromium — do not run those inside a web API process.
+
+Playwright brands are gated by `HTTP_BOOKMAKERS` (the on-the-fly allowlist). `run()` will still accept `-b bet365` on a machine with Playwright installed; the backend should reject anything not in that set so Railway never launches Chromium. Adapters load on first use, so importing `pinnacle` / `bwin` / `unibet` does not import Playwright.
 
 ## Install (GitHub is the registry)
 
 No PyPI. Pin a tag from this repo in the backend:
 
 ```text
-bookie-scraper @ git+https://github.com/Geordie1071-spec/BookieScraper.git@v0.1.1
+bookie-scraper @ git+https://github.com/Geordie1071-spec/BookieScraper.git@v0.1.2
 ```
 
 If the repo is private, use a token in the URL (`git+https://${GITHUB_TOKEN}@github.com/...`).
 
 ```bash
 # HTTP books only (Railway / backend)
-pip install "bookie-scraper @ git+https://github.com/Geordie1071-spec/BookieScraper.git@v0.1.1"
+pip install "bookie-scraper @ git+https://github.com/Geordie1071-spec/BookieScraper.git@v0.1.2"
 
 # Local CLI including Playwright brands
-pip install "bookie-scraper[playwright] @ git+https://github.com/Geordie1071-spec/BookieScraper.git@v0.1.1"
+pip install "bookie-scraper[playwright] @ git+https://github.com/Geordie1071-spec/BookieScraper.git@v0.1.2"
 python -m playwright install chromium
 ```
 
@@ -41,7 +43,7 @@ from bookie_scraper import HTTP_BOOKMAKERS, ScrapeConfig, results_to_csv, run
 
 async def scrape_csv(bookie: str, sport: str) -> str:
     if bookie not in HTTP_BOOKMAKERS:
-        raise ValueError(f"{bookie} is not an HTTP book; use pinnacle or bwin")
+        raise ValueError(f"{bookie} is not an HTTP book; use pinnacle, bwin, or unibet")
     results = await run(ScrapeConfig(
         bookmakers=[bookie],
         sports=[sport],
@@ -110,6 +112,7 @@ CLI outputs land in `data/runs/<timestamp>/` and are copied to `data/latest/`:
 | `betsson` | Playwright session + `/api/sb` events-table and accordion per event | every competition under each sport |
 | `betway` | Playwright: every competition, then each event page for all markets | all sports listed on the site |
 | `ivybet` | Playwright + Digitain Socket.IO event odds (`sb.ivybet.com`). Baseball visits every event (player props included). Other sports cap event-page visits. F1 is parsed from the featured outright listing. | all sports on the sportsbook |
+| `unibet` | Kambi offering API (`offering-api.kambicdn.com`). `listView` for main markets; per-event `betoffer` when `--depth full`. | sports on the Unibet Kambi tree |
 | `bwin` | Entain CDS `fixtures` + `fixture-view?offerMapping=All`. Baseball fixture-view includes player hits/runs/HRs/Ks. | all sports with CDS fixtures |
 
 Add a new brand by dropping a class in `bookie_scraper/bookmakers/` and registering it in `bookmakers/__init__.py` (`_ADAPTERS`).

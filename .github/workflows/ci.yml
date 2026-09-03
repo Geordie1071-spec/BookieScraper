@@ -19,8 +19,10 @@ jobs:
           python -c "
           from bookie_scraper import HTTP_BOOKMAKERS, REGISTRY, results_to_csv, run, ScrapeConfig
           assert 'pinnacle' in HTTP_BOOKMAKERS
+          assert 'unibet' in HTTP_BOOKMAKERS
           assert REGISTRY['pinnacle'].key == 'pinnacle'
           assert REGISTRY['bwin'].key == 'bwin'
+          assert REGISTRY['unibet'].key == 'unibet'
           import sys
           assert 'playwright' not in sys.modules
           print('http books ok')
