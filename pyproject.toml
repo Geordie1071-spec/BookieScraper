@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bookie-scraper"
-version = "0.1.1"
+version = "0.1.2"
 description = "Multi-brand sportsbook odds scraper that writes a unified CSV backup feed."
 readme = "README.md"
 requires-python = ">=3.10"

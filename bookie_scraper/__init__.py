@@ -5,7 +5,7 @@ from bookie_scraper.config import ScrapeConfig
 from bookie_scraper.runner import run
 from bookie_scraper.storage import results_to_csv
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 __all__ = [
     "HTTP_BOOKMAKERS",
